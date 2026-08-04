@@ -36,19 +36,48 @@ model News {
   updateAt    DateTime  @updatedAt
 }
 
+enum SocialPlatform {
+  INSTAGRAM
+  TIKTOK
+}
+
 model Creator {
-  id           Int     @id @default(autoincrement())
-  name         String
-  slug         String  @unique
-  category     String
-  profileImage String?
-  verified     Boolean @default(false)
+  id                 Int      @id @default(autoincrement())
+  name               String
+  slug               String   @unique
+  category           String
+  profileImage       String?
+  verified           Boolean  @default(false)
+  /// Denormalized cache synced from SocialAccount for public display
   instagramUsername  String?
-  instagramFollowers String? // 
-  tiktokUsername  String?
-  tiktokFollowers String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  instagramFollowers String?
+  tiktokUsername     String?
+  tiktokFollowers    String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  socialAccounts SocialAccount[]
+}
+
+/// Source of truth for platform profile URLs and follower metrics.
+/// Phase 1 stores followers only; columns for future metrics can be added later.
+model SocialAccount {
+  id               Int            @id @default(autoincrement())
+  contentCreatorId Int
+  platform         SocialPlatform
+  username         String?
+  profileUrl       String?
+  followers        Int?
+  /// Platform-specific verification (IG can be verified while TikTok is not)
+  verified         Boolean        @default(false)
+  lastSyncedAt     DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  contentCreator Creator @relation(fields: [contentCreatorId], references: [id], onDelete: Cascade)
+
+  @@unique([contentCreatorId, platform])
+  @@index([platform])
 }
 
 model ContactMessage {
