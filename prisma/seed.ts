@@ -12,17 +12,17 @@ if (!connectionString) {
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter }); //PrismaClient = the object that lets you create, read, update, and delete data in your database.
 
-async function main(){
-    const hashedPassword=await bcrypt.hash('12345',10)
+async function main() {
+  const hashedPassword = await bcrypt.hash('12345', 10);
 
-    await prisma.user.create({
-data:{
-    email:'mucyobruce2003@gmail.com',
-    password:hashedPassword,
-    role:'Admin'
-}
-    })
-    console.log('user created succesfull')
+  await prisma.user.create({
+    data: {
+      email: 'cdyagency@gmail.com',
+      password: hashedPassword,
+      role: 'Admin',
+    },
+  });
+  console.log('user created succesfull');
 }
 
 main()
