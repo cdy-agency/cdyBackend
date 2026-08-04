@@ -15,6 +15,7 @@ import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ContentCreatorService } from './content-creator.service';
 import { CreateContentCreatorDto } from './dto/create-content-creator.dto';
 import { UpdateContentCreatorDto } from './dto/update-content-creator.dto';
+import { PreviewFollowersDto } from './dto/preview-followers.dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.config';
 
 @ApiTags('content-creator')
@@ -63,9 +64,20 @@ export class ContentCreatorController {
   }
 
   @Get('AllCreators')
-  @ApiOperation({ summary: 'List all content creators (followers from DB only)' })
+  @ApiOperation({
+    summary: 'List all content creators (followers from DB only)',
+  })
   findAll() {
     return this.contentCreatorService.findAll();
+  }
+
+  @Post('preview-followers')
+  @ApiOperation({
+    summary:
+      'Preview follower count for a social profile URL without saving (admin form)',
+  })
+  previewFollowers(@Body() dto: PreviewFollowersDto) {
+    return this.contentCreatorService.previewFollowers(dto);
   }
 
   @Post('sync-all-followers')
@@ -91,7 +103,8 @@ export class ContentCreatorController {
 
   @Patch(':id')
   @ApiOperation({
-    summary: 'Update a content creator; re-syncs followers when profile URLs change',
+    summary:
+      'Update a content creator; re-syncs followers when profile URLs change',
   })
   update(
     @Param('id', ParseIntPipe) id: number,

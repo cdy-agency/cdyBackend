@@ -1,8 +1,15 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { SocialPlatform } from '@prisma/client';
 import { CreateContentCreatorDto } from './dto/create-content-creator.dto';
 import { UpdateContentCreatorDto } from './dto/update-content-creator.dto';
+import { PreviewFollowersDto } from './dto/preview-followers.dto';
 import { PrismaService } from 'src/prisma.service';
 import { SocialAccountService } from 'src/social-account/social-account.service';
+import {
+  formatFollowerCount,
+  isInstagramProfileUrl,
+  isTikTokProfileUrl,
+} from 'src/social-account/utils/social-url.util';
 import slugify from 'slugify';
 
 const creatorInclude = {
@@ -151,6 +158,84 @@ export class ContentCreatorService {
 
   syncAllFollowers() {
     return this.socialAccountService.syncAllCreators();
+  }
+
+  /**
+   * Preview follower count for a profile URL without persisting anything.
+   * Used by the admin form as the user types/pastes a URL.
+   */
+  async previewFollowers(dto: PreviewFollowersDto) {
+    const profileUrl = dto.profileUrl.trim();
+
+    if (dto.platform === SocialPlatform.INSTAGRAM) {
+      if (!isInstagramProfileUrl(profileUrl)) {
+        return {
+          platform: dto.platform,
+          username: null as string | null,
+          followers: null as number | null,
+          followersLabel: null as string | null,
+          error: 'Invalid Instagram profile URL',
+        };
+      }
+
+      try {
+        const snapshot =
+          await this.socialAccountService.fetchInstagramFollowers(profileUrl);
+        return {
+          platform: dto.platform,
+          username: snapshot.username,
+          followers: snapshot.followers,
+          followersLabel: formatFollowerCount(snapshot.followers),
+          error: null as string | null,
+        };
+      } catch (error) {
+        this.logger.error(
+          `Instagram follower preview failed for ${profileUrl}`,
+          error instanceof Error ? error.stack : undefined,
+        );
+        return {
+          platform: dto.platform,
+          username: null as string | null,
+          followers: null as number | null,
+          followersLabel: null as string | null,
+          error: 'Could not fetch Instagram followers',
+        };
+      }
+    }
+
+    if (!isTikTokProfileUrl(profileUrl)) {
+      return {
+        platform: dto.platform,
+        username: null as string | null,
+        followers: null as number | null,
+        followersLabel: null as string | null,
+        error: 'Invalid TikTok profile URL',
+      };
+    }
+
+    try {
+      const snapshot =
+        await this.socialAccountService.fetchTikTokFollowers(profileUrl);
+      return {
+        platform: dto.platform,
+        username: snapshot.username,
+        followers: snapshot.followers,
+        followersLabel: formatFollowerCount(snapshot.followers),
+        error: null as string | null,
+      };
+    } catch (error) {
+      this.logger.error(
+        `TikTok follower preview failed for ${profileUrl}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      return {
+        platform: dto.platform,
+        username: null as string | null,
+        followers: null as number | null,
+        followersLabel: null as string | null,
+        error: 'Could not fetch TikTok followers',
+      };
+    }
   }
 
   remove(id: number) {
